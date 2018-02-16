@@ -1,13 +1,38 @@
-module Make(L : Lattice.T) :
+module Var :
   sig
     type t
 
-    type elt = L.t
+    val make : int -> t
 
-    val join : t -> t -> t
-    val meet : t -> t -> t
+    val equal : t -> t -> bool
+    val compare : t -> t -> int
+  end
 
-    val fresh : (elt -> t) -> t
+module VarMap : module type of Map.Make(Var)
 
-    val extract : t -> elt Stream.t
+module type Value =
+  sig
+    include Lattice.T
+
+    val injvar : Var.t -> t
+
+    val is_var : t -> Var.t option
+  end
+
+module type Solver =
+  sig
+    module Domain : Value
+
+    include Lattice.T
+
+    val fresh : (Domain.t -> t) -> t
+
+    val extract : t -> Domain.t Stream.t
+  end
+
+module type EqSolver =
+  sig
+    include Solver
+
+    val eq : Domain.t -> Domain.t -> t
   end
