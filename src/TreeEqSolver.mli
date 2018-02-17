@@ -1,6 +1,12 @@
 module Make (T : Symbolic.EqSolver) :
   sig
-    module Domain : module type of Tree.Make(T.Domain)
+    type tree =
+      | Var of Symbolic.Var.t
+      | Const of T.t
+      | Func of string * T.t list
+      | Bot
+
+    module Domain : Symbolic.Value with type t = tree
 
     include Lattice.T
 

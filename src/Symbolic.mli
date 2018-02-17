@@ -25,8 +25,6 @@ module type Solver =
 
     include Lattice.T
 
-    val fresh : (Domain.t -> t) -> t
-
     val extract : t -> Domain.t Stream.t
   end
 
