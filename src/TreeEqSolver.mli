@@ -1,10 +1,10 @@
-module Make (T : Symbolic.EqSolver) :
-  sig
+(* module Make (T : Symbolic.EqSolver) :
+  sig *)
     type tree =
       | Var of Symbolic.Var.t
-      | Const of T.t
+      (* | Const of T.t *)
       | Func of string * T.t list
-      | Bot
+      (* | Bot *)
 
     module Domain : Symbolic.Value with type t = tree
 
@@ -13,4 +13,4 @@ module Make (T : Symbolic.EqSolver) :
     val fresh : (Domain.t -> t) -> t
 
     val extract : t -> Domain.t Stream.t
-  end
+  (* end *)

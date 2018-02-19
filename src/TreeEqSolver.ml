@@ -1,20 +1,25 @@
 open Symbolic
 
-module Make (T : EqSolver) =
-  struct
+(* module Make (T : EqSolver) =
+  struct *)
     type tree =
       | Var of Var.t
-      | Const of T.Domain.t
+      (* | Const of T.Domain.t *)
       | Func of string * tree list
-      | Bot
+      (* | Bot *)
 
-    type t = tree VarMap.t * T.t
+    type t = Bot | Subst of tree VarMap.t
 
-    let top = (VarMap.empty, T.top)
-    let bot = (VarMap.empty, T.bot)
+    let top = VarMap.empty
+    let bot = Bot
 
-    let is_top (s, t) = (VarMap.is_empty s) && (T.is_top t)
-    let is_bot (s, t) = (T.is_bot t)
+    let is_top = function
+      | Subst s -> (VarMap.is_empty s)
+      | Bot     -> false
+
+    let is_bot (s, t) = function
+      | Subst _ -> false
+      | Bot     -> true
 
     exception Occurs_check
     exception Unification_failed
@@ -25,16 +30,17 @@ module Make (T : EqSolver) =
       | _     -> x
 
     let rec occurs_exn v x s =
-      match x with
+      match walk x s with
       | Var u         -> if Var.equal v u then raise Occurs_check else ()
       | Func (f, xs)  -> List.iter (fun x -> occurs_exn v x s) xs
       | _             -> ()
 
+    let extend v x s =
+      occurs_exn v x s;
+      VarMap.add v x s
+
     let rec unify x y ((s, t) as solver) =
-      let extend v t s =
-        occurs_exn v t s;
-        VarMap.add v t s
-      in
+
       try
         if is_bot solver then bot else
           match walk x s, walk y s with
@@ -57,7 +63,7 @@ module Make (T : EqSolver) =
       | Bot, _ -> y
       | _, Bot -> x
       | Func (f, xs), Func (g, ys) when f = g -> Func (f, List.map2 antiunify xs ys)
-      | _ -> Var (Var.make (-1))
+      | _ -> Var (Var.fresh ())
 
     let meet a b =
       if (is_bot a) || (is_bot b) then bot else
@@ -68,7 +74,8 @@ module Make (T : EqSolver) =
           VarMap.fold (fun v x -> unify (Var v) x) s (s', t)
 
     let join a b =
-      if (is_top a) || (is_top b) then top else
+      failwith "Not implemented"
+      (* if (is_top a) || (is_top b) then top else
       if (is_bot a) then b else
       if (is_bot b) then a else
         let (s, t), (s', t') = a, b in
@@ -81,15 +88,15 @@ module Make (T : EqSolver) =
           with Not_found -> acc
         ) s VarMap.empty
         in
-        (s, T.join t t')
+        (s, T.join t t') *)
 
-    let extract x ((s, t) as solver) =
+    let rec extract x ((s, t) as solver) =
       if is_bot solver then Stream.empty else
         match walk x s with
         | Bot             -> Stream.empty
-        | Var v as x      -> x
+        | Var v as x      -> Stream.single x
         | Const c         -> Stream.map (fun c -> Const c) @@ T.extract c t
-        | Func (f, x::xs) ->
+        | Func (f, xs)    ->
           let stream = ListLabels.fold_right xs
             ~init:(Stream.return [])
             ~f:(fun x acc ->
@@ -106,27 +113,27 @@ module Make (T : EqSolver) =
       struct
         type t = tree
 
-        let top' = top
+        (* let top' = top *)
 
-        let top = Var (Var.of_int 0)
+        (* let top = Var (Var.dummy) *)
 
-        let bot = Bot
+        (* let bot = Bot *)
 
-        let is_top = function
+        (* let is_top = function
         | Var _ -> true
-        | _     -> false
+        | _     -> false *)
 
-        let is_bot = function
+        (* let is_bot = function
         | Bot -> true
-        | _   -> false
+        | _   -> false *)
 
-        let join = antiunify
+        (* let join = antiunify *)
 
-        let meet x y =
+        (* let meet x y =
           let solver = unify x y top' in
           match Stream.split @@ extract x solver with
           | Some (x, xs) -> assert (Stream.is_empty xs); x
-          | None         -> assert false
+          | None         -> assert false *)
 
         let injvar v = Var v
 

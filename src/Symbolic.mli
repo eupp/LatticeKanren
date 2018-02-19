@@ -2,7 +2,7 @@ module Var :
   sig
     type t
 
-    val make : int -> t
+    val fresh : unit -> t
 
     val equal : t -> t -> bool
     val compare : t -> t -> int
@@ -12,7 +12,7 @@ module VarMap : module type of Map.Make(Var)
 
 module type Value =
   sig
-    include Lattice.T
+    (* include Lattice.T *)
 
     val injvar : Var.t -> t
 
@@ -23,14 +23,15 @@ module type Solver =
   sig
     module Domain : Value
 
-    include Lattice.T
+    (* include Lattice.T *)
 
-    val extract : t -> Domain.t Stream.t
+    val extract : Domain.t -> t -> Domain.t Stream.t
   end
 
 module type EqSolver =
   sig
     include Solver
 
-    val eq : Domain.t -> Domain.t -> t
+    (* val eq : Domain.t -> Domain.t -> t *)
+    val (===) : Domain.t -> Domain.t -> t -> t
   end
