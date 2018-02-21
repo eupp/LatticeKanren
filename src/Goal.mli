@@ -1,15 +1,17 @@
 (* Goal is a suspended non-deterministic computation (possible infinite) *)
 type ('a, 'b) t
 
-(* monad on the second type parameter *)
+(* monad on the first type parameter *)
 
-val return : 'b -> ('a, 'b) t
+(* val return : 'b -> ('a, 'b) t *)
 
-val bind : ('a, 'b) t -> ('b -> ('a, 'c) t) -> ('a, 'c) t
-
-(* monad+ on the second type parameter with different `mplus` strategies *)
+(* val bind : ('a, 'b) t -> ('b -> ('a, 'c) t) -> ('a, 'c) t *)
 
 val empty : ('a, 'b) t
+
+val map : ('a, 'b) t -> ('b -> 'c) -> ('a, 'c) t
+
+val map_opt : ('a, 'b) t -> ('b -> 'c option) -> ('a, 'c) t
 
 (* interleaving of two goals *)
 val interleave : ('a, 'b) t -> ('a, 'b) t -> ('a, 'b) t
