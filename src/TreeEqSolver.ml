@@ -29,10 +29,15 @@ open Symbolic
       | Var v -> (try walk (VarMap.find v s) s with Not_found -> x)
       | _     -> x
 
-    let rec reify x s =
-      match walk x s with
-      | Var v        -> Var v
-      | Func (f, xs) -> Func (f, List.map (fun x -> reify x s) xs)
+    let rec reify x t =
+      let rec helper x s =
+        match walk x s with
+        | Var v        -> Var v
+        | Func (f, xs) -> Func (f, List.map (fun x -> helper x s) xs)
+      in
+      match t with
+      | None    -> None
+      | Some s  -> Some (helper x s)
 
     let rec occurs_exn v x s =
       match walk x s with
@@ -109,10 +114,10 @@ open Symbolic
     let fresh g =
       let v = Var (Var.fresh ()) in g v
 
-    let rec extract x t =
+    (* let rec extract x t =
       match t with
       | None   -> MyStream.empty
-      | Some s -> MyStream.single (reify x s)
+      | Some s -> MyStream.single (reify x s) *)
 
     (* let rec extract x ((s, t) as solver) =
       if is_bot solver then Stream.empty else

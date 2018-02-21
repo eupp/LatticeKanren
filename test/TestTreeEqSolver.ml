@@ -17,11 +17,8 @@ let tests =
           let v = Var (Var.fresh ()) in
           let u = Var (Var.fresh ()) in
           let s = (v === u) in
-          let answs = extract (Func ("pair", [v; u])) s in
-          let [answ] = take answs in
-          match answ with
-          | Func ("pair", [Var a; Var b]) ->
-            assert_bool "Vars not equal" (Var.equal a b)
+          match reify (Func ("", [v; u])) s with
+          | Some (Func ("", [Var a; Var b])) -> assert_bool "Vars not equal" (Var.equal a b)
           | _ -> assert_failure ""
         )
 
@@ -29,26 +26,28 @@ let tests =
           let v = Var (Var.fresh ()) in
           let t = Func ("f", []) in
           let s = (v === t) in
-          let answs = extract v s in
-          let [answ] = take answs in
-          assert_equal t answ
+          match reify v s with
+          | Some answ -> assert_equal t answ
+          | None      -> assert_failure ""
         )
 
     ; "unify-term-diff" >:: (fun test_ctx ->
           let t  = Func ("f", []) in
           let t' = Func ("g", []) in
           let s = (t === t') in
-          let answs = extract t s in
-          assert_bool "Stream not empty" (is_empty answs)
+          match reify t s with
+          | None      -> ()
+          | Some answ -> assert_failure ""
         )
 
     ; "unify-term-term" >:: (fun test_ctx ->
           let t  = Func ("Cons", [Func ("x", []);     Var (Var.fresh ())]) in
           let t' = Func ("Cons", [Var (Var.fresh ()); Func ("Nil", []); ]) in
           let s = (t === t') in
-          let answs = extract t s in
-          let [answ] = take answs in
-          assert_equal (Func ("Cons", [Func ("x", []); Func ("Nil", [])])) answ
+          match reify t s with
+          | None      -> assert_failure ""
+          | Some answ ->
+            assert_equal (Func ("Cons", [Func ("x", []); Func ("Nil", [])])) answ
         )
 
     ; "meet" >:: (fun test_ctx ->
@@ -56,9 +55,10 @@ let tests =
           let t  = Func ("Cons", [Func ("x", []);     Var (Var.fresh ())]) in
           let t' = Func ("Cons", [Var (Var.fresh ()); Func ("Nil", []); ]) in
           let s = meet (t === t') (v === t) in
-          let answs = extract v s in
-          let [answ] = take answs in
-          assert_equal ~printer (Func ("Cons", [Func ("x", []); Func ("Nil", [])])) answ
+          match reify v s with
+          | None      -> assert_failure ""
+          | Some answ ->
+            assert_equal (Func ("Cons", [Func ("x", []); Func ("Nil", [])])) answ
         )
 
     ; "meet-bot" >:: (fun test_ctx ->
@@ -66,8 +66,9 @@ let tests =
           let t  = Func ("f", []) in
           let t' = Func ("g", []) in
           let s = meet (v === t) (v === t') in
-          let answs = extract v s in
-          assert_bool "Stream not empty" (is_empty answs)
+          match reify v s with
+          | None      -> ()
+          | Some answ -> assert_failure ""
         )
 
     ]

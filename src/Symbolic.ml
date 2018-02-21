@@ -39,7 +39,7 @@ module type Solver =
 
     (* include Lattice.T *)
 
-    val extract : Domain.t -> t -> Domain.t MyStream.t
+    (* val extract : Domain.t -> t -> Domain.t MyStream.t *)
   end
 
 module type EqSolver =

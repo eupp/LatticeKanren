@@ -14,7 +14,9 @@
 
     val fresh : (Domain.t -> t) -> t
 
-    val extract : Domain.t -> t -> Domain.t MyStream.t
+    (* val extract : Domain.t -> t -> Domain.t MyStream.t *)
+
+    val reify : Domain.t -> t -> Domain.t option
 
     val show : t -> string
   (* end *)
