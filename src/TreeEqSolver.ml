@@ -4,22 +4,22 @@ open Symbolic
   struct *)
     type tree =
       | Var of Var.t
-      (* | Const of T.Domain.t *)
       | Func of string * tree list
+      (* | Const of T.Domain.t *)
       (* | Bot *)
 
-    type t = Bot | Subst of tree VarMap.t
+    type t = tree VarMap.t option
 
-    let top = VarMap.empty
-    let bot = Bot
+    let top = Some VarMap.empty
+    let bot = None
 
     let is_top = function
-      | Subst s -> (VarMap.is_empty s)
-      | Bot     -> false
+      | Some s -> (VarMap.is_empty s)
+      | None   -> false
 
-    let is_bot (s, t) = function
-      | Subst _ -> false
-      | Bot     -> true
+    let is_bot = function
+      | Some _ -> false
+      | None   -> true
 
     exception Occurs_check
     exception Unification_failed
@@ -33,45 +33,54 @@ open Symbolic
       match walk x s with
       | Var u         -> if Var.equal v u then raise Occurs_check else ()
       | Func (f, xs)  -> List.iter (fun x -> occurs_exn v x s) xs
-      | _             -> ()
+      (* | _             -> () *)
 
     let extend v x s =
       occurs_exn v x s;
       VarMap.add v x s
 
-    let rec unify x y ((s, t) as solver) =
-
+    let rec unify x y t =
       try
-        if is_bot solver then bot else
+        match t with
+        | None   -> None
+        | Some s ->
+        (* if is_bot t then bot else *)
           match walk x s, walk y s with
           | Var v, Var u ->
-            if Var.equal u v then solver else (extend u (Var v) s, t)
+            if Var.equal u v then t else Some (extend u (Var v) s)
           | Var v, x | x, Var v ->
             begin match x with
-            | Func _  -> (extend v x s, t)
-            | Const c -> (extend v x s, T.(meet t @@ eq c (T.Domain.injvar v)))
-            | Bot     -> raise Unification_failed
+            | Func _  -> Some (extend v x s)
+            (* | Const c -> Some (extend v x s) *)
+            (* | Bot     -> raise Unification_failed *)
             end
-          | Const a, Const b -> (s, T.(meet t @@ eq a b))
+          (* | Const a, Const b -> (s, T.(meet t @@ eq a b)) *)
+          (* | Const a, Const b  *)
           | Func (f, xs), Func (g, ys) when f = g ->
-            ListLabels.fold_left2 xs ys ~init:solver ~f:(fun acc x y -> unify x y acc)
+            ListLabels.fold_left2 xs ys ~init:t ~f:(fun acc x y -> unify x y acc)
           | _ -> raise Unification_failed
       with Occurs_check | Unification_failed -> bot
 
-    let rec antiunify x y =
+    (* let rec antiunify x y =
       match x, y with
       | Bot, _ -> y
       | _, Bot -> x
       | Func (f, xs), Func (g, ys) when f = g -> Func (f, List.map2 antiunify xs ys)
-      | _ -> Var (Var.fresh ())
+      | _ -> Var (Var.fresh ()) *)
 
     let meet a b =
-      if (is_bot a) || (is_bot b) then bot else
+      match a, b with
+      | None,_ | _,None -> None
+      | Some s, Some s' ->
+        let s, s' = if VarMap.(cardinal s < cardinal s') then s, s' else s', s in
+        VarMap.fold (fun v x -> unify (Var v) x) s (Some s')
+
+      (* if (is_bot a) || (is_bot b) then bot else
         let (s, t), (s', t') = a, b in
         let t = T.meet t t' in
         if T.is_bot t then bot else
           let s, s' = if VarMap.(cardinal s < cardinal s') then s, s' else s', s in
-          VarMap.fold (fun v x -> unify (Var v) x) s (s', t)
+          VarMap.fold (fun v x -> unify (Var v) x) s (s', t) *)
 
     let join a b =
       failwith "Not implemented"
@@ -90,7 +99,15 @@ open Symbolic
         in
         (s, T.join t t') *)
 
-    let rec extract x ((s, t) as solver) =
+    let fresh g =
+      let v = Var (Var.fresh ()) in g v
+
+    let rec extract x t =
+      match t with
+      | None   -> Stream.empty
+      | Some s -> Stream.single (walk x s)
+
+    (* let rec extract x ((s, t) as solver) =
       if is_bot solver then Stream.empty else
         match walk x s with
         | Bot             -> Stream.empty
@@ -107,7 +124,7 @@ open Symbolic
               )
             )
           in
-          Stream.map (fun xs -> Func (f, xs)) stream
+          Stream.map (fun xs -> Func (f, xs)) stream *)
 
     module Domain =
       struct
@@ -143,4 +160,4 @@ open Symbolic
 
       end
 
-  end
+  (* end *)

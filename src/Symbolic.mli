@@ -12,6 +12,7 @@ module VarMap : module type of Map.Make(Var)
 
 module type Value =
   sig
+    type t
     (* include Lattice.T *)
 
     val injvar : Var.t -> t
@@ -21,6 +22,8 @@ module type Value =
 
 module type Solver =
   sig
+    type t
+
     module Domain : Value
 
     (* include Lattice.T *)
@@ -33,5 +36,5 @@ module type EqSolver =
     include Solver
 
     (* val eq : Domain.t -> Domain.t -> t *)
-    val (===) : Domain.t -> Domain.t -> t -> t
+    val (===) : Domain.t -> Domain.t -> t
   end

@@ -2,8 +2,8 @@
   sig *)
     type tree =
       | Var of Symbolic.Var.t
+      | Func of string * tree list
       (* | Const of T.t *)
-      | Func of string * T.t list
       (* | Bot *)
 
     module Domain : Symbolic.Value with type t = tree
@@ -12,5 +12,5 @@
 
     val fresh : (Domain.t -> t) -> t
 
-    val extract : t -> Domain.t Stream.t
+    val extract : Domain.t -> t -> Domain.t Stream.t
   (* end *)

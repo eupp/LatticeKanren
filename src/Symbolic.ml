@@ -5,8 +5,8 @@ module Var =
     let next_idx = ref 0
 
     let fresh () =
-      let idx = !next_id in
-      next_idx := !next_id + 1;
+      let idx = !next_idx in
+      next_idx := !next_idx + 1;
       idx
 
     let equal = (=)
@@ -17,7 +17,8 @@ module VarMap = Map.Make(Var)
 
 module type Value =
   sig
-    include Lattice.T
+    (* include Lattice.T *)
+    type t
 
     val injvar : Var.t -> t
 
@@ -26,16 +27,19 @@ module type Value =
 
 module type Solver =
   sig
+    type t
+
     module Domain : Value
 
-    include Lattice.T
+    (* include Lattice.T *)
 
-    val extract : t -> Domain.t Stream.t
+    val extract : Domain.t -> t -> Domain.t Stream.t
   end
 
 module type EqSolver =
   sig
     include Solver
 
-    val eq : Domain.t -> Domain.t -> t
+    (* val eq : Domain.t -> Domain.t -> t *)
+    val (===) : Domain.t -> Domain.t -> t
   end
