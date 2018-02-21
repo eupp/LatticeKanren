@@ -1,8 +1,8 @@
 open OUnit2
 
 let tests = "lkanren" >:::
-  [ "stream" >::: [TestStream.tests]
-
+  [ TestStream.tests
+  ; TestTreeEqSolver.tests
   ]
 
 let () =

@@ -26,8 +26,13 @@ open Symbolic
 
     let rec walk x s =
       match x with
-      | Var v -> try walk (VarMap.find v s) s with Not_found -> x
+      | Var v -> (try walk (VarMap.find v s) s with Not_found -> x)
       | _     -> x
+
+    let rec reify x s =
+      match walk x s with
+      | Var v        -> Var v
+      | Func (f, xs) -> Func (f, List.map (fun x -> reify x s) xs)
 
     let rec occurs_exn v x s =
       match walk x s with
@@ -60,6 +65,8 @@ open Symbolic
             ListLabels.fold_left2 xs ys ~init:t ~f:(fun acc x y -> unify x y acc)
           | _ -> raise Unification_failed
       with Occurs_check | Unification_failed -> bot
+
+    let (===) x y = unify x y top
 
     (* let rec antiunify x y =
       match x, y with
@@ -104,8 +111,8 @@ open Symbolic
 
     let rec extract x t =
       match t with
-      | None   -> Stream.empty
-      | Some s -> Stream.single (walk x s)
+      | None   -> MyStream.empty
+      | Some s -> MyStream.single (reify x s)
 
     (* let rec extract x ((s, t) as solver) =
       if is_bot solver then Stream.empty else
@@ -158,6 +165,24 @@ open Symbolic
         | Var v -> Some v
         | _     -> None
 
+        let rec show = function
+        | Var v         -> Var.show v
+        | Func (f, xs)  -> Printf.sprintf "%s (%s)" f (String.concat ", " @@ List.map show xs)
+
+        let rec equal x y =
+          match x, y with
+          | Var v, Var u        -> Var.equal v u
+          | Var _, _ | _, Var _ -> false
+          | Func (f,xs), Func (g,ys) when f=g -> List.for_all2 equal xs ys
+          | _ -> false
+
       end
+
+    let show = function
+    | None    -> "bot"
+    | Some s  ->
+      let pp v x = Printf.sprintf "%s=%s" (Var.show v) (Domain.show x) in
+      let bs = VarMap.fold (fun v x acc -> (pp v x)::acc) s [] in
+      Printf.sprintf "subst {%s}" @@ String.concat "; " bs
 
   (* end *)

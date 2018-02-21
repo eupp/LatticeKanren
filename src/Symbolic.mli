@@ -4,6 +4,8 @@ module Var :
 
     val fresh : unit -> t
 
+    val show : t -> string
+
     val equal : t -> t -> bool
     val compare : t -> t -> int
   end
@@ -18,6 +20,10 @@ module type Value =
     val injvar : Var.t -> t
 
     val is_var : t -> Var.t option
+
+    val show : t -> string
+
+    val equal : t -> t -> bool
   end
 
 module type Solver =
@@ -28,7 +34,7 @@ module type Solver =
 
     (* include Lattice.T *)
 
-    val extract : Domain.t -> t -> Domain.t Stream.t
+    val extract : Domain.t -> t -> Domain.t MyStream.t
   end
 
 module type EqSolver =

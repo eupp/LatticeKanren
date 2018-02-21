@@ -1,5 +1,5 @@
 open OUnit2
-open Lkanren.Stream
+open Lkanren.MyStream
 
 
 let nats =

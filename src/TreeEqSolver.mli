@@ -10,7 +10,11 @@
 
     include Lattice.T
 
+    val (===) : Domain.t -> Domain.t -> t
+
     val fresh : (Domain.t -> t) -> t
 
-    val extract : Domain.t -> t -> Domain.t Stream.t
+    val extract : Domain.t -> t -> Domain.t MyStream.t
+
+    val show : t -> string
   (* end *)
