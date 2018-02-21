@@ -21,7 +21,9 @@ val interweave : ('a, 'a) t -> ('a, 'a) t -> ('a, 'a) t
 
 val run : ?n:int -> 'a -> ('a, 'b) t -> 'b list
 
-val delay : ('a, 'b) t -> ('a, 'b) t
+val delay : (unit -> ('a, 'b) t) -> ('a, 'b) t
+
+val delay3 : ('k -> 'l -> 'm -> ('a, 'b) t) -> 'k -> 'l -> 'm -> ('a, 'b) t
 
 val lift_f : ('a -> 'b) -> ('a, 'b) t
 

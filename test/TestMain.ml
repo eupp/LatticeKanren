@@ -8,3 +8,4 @@ let tests = "lkanren" >:::
 
 let () =
   run_test_tt_main tests
+  (* TestAppendo.main *)

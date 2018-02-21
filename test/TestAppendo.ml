@@ -35,12 +35,6 @@ module Fresh =
       let c = Var (Var.fresh ()) in
       let d = Var (Var.fresh ()) in
       f a b c d
-
-    (* let two f = lift @@ fresh (fun a -> fresh (fun b -> f a b)) *)
-
-    (* let three f = lift @@ fresh (fun a -> fresh (fun b -> fresh (fun c -> f a b c))) *)
-
-    (* let four f = lift @@ fresh (fun a -> fresh (fun b -> fresh (fun c -> fresh (fun d -> f a b c d)))) *)
   end
 
 let nil       = Func ("Nil" , [])
@@ -62,22 +56,51 @@ let (?&) ss = lift @@
       meet s s'
     )
 
-let rec appendo a b ab = delay @@
+let rec appendo a b ab =
   (?&
     [ (a === nil)
     ; (b === ab)
     ]
   )
   |||
-  (delay @@ Fresh.three (fun h t ab' ->
+  (Fresh.three (fun h t ab' ->
     (?&
       [ (a  === cons h t)
       ; (ab === cons h ab')
       ]
     )
     &&&
-      (delay @@ appendo t b ab')
+      ((delay3 appendo) t b ab')
   ))
+
+(* let appendo =
+  let helpero = ref (fun _ _ _ -> assert false) in
+  let appendo = delay3 (fun a b c -> appendo' !helpero a b c) in
+  (helpero := appendo);
+  appendo *)
+
+(* let rec appendo' reco a b ab =
+  (?&
+    [ (a === nil)
+    ; (b === ab)
+    ]
+  )
+  |||
+  (Fresh.three (fun h t ab' ->
+    (?&
+      [ (a  === cons h t)
+      ; (ab === cons h ab')
+      ]
+    )
+    &&&
+      (reco t b ab')
+  ))
+
+let appendo =
+  let helpero = ref (fun _ _ _ -> assert false) in
+  let appendo = delay3 (fun a b c -> appendo' !helpero a b c) in
+  (helpero := appendo);
+  appendo *)
 
 let rec reverso a b =
   (?&
@@ -104,7 +127,7 @@ module Run =
     let one ?n g =
       run ?n top @@
         Fresh.one (fun q ->
-          bind (g q) (fun s -> lift_fopt (fun _ -> reify q s))
+          bind (g q) (fun s -> Printf.printf "\n%s\n" (show s); lift_fopt (fun _ -> reify q s))
             (* match reify q s with
             | Some q -> return q
             | None -> empty *)
@@ -118,11 +141,11 @@ module Run =
         )
   end
 
-let assert_list_equal ?cmp xs ys =
+let assert_list_equal ?cmp ?printer xs ys =
   let xl, yl = List.length xs, List.length ys in
   let msg = Printf.sprintf "Lists have different length: expected %d, actual %d" xl yl in
   assert_equal ~msg xl yl;
-  List.iter2 (fun x y -> assert_equal ?cmp x y) xs ys
+  List.iter2 (fun x y -> assert_equal ?cmp ?printer x y) xs ys
 
 let tests =
   "appendo" >:::
@@ -131,8 +154,34 @@ let tests =
         let b = of_ilist [1; 2] in
         let c = of_ilist [1; 2] in
         (* let [answ] = Run.one ~n:1 (fun q -> appendo a b q) in *)
-        let answs = Run.one ~n:1 (fun q -> appendo a b q) in
+        let answs = Run.one (fun q -> appendo a b q) in
         assert_list_equal ~cmp:Domain.equal [c] answs
-      )
+      );
+
+      "2" >:: (fun test_ctx ->
+          let a = of_ilist [1;] in
+          let b = of_ilist [2;] in
+          let c = of_ilist [1; 2] in
+          (* let [answ] = Run.one ~n:1 (fun q -> appendo a b q) in *)
+          let answs = Run.one ~n:1 (fun q -> appendo a b q) in
+          assert_list_equal ~cmp:Domain.equal ~printer:Domain.show [c] answs
+        );
+
+      "3" >:: (fun test_ctx ->
+          let a = of_ilist [1;] in
+          let b = of_ilist [2;] in
+          let c = of_ilist [1; 2] in
+          (* let [answ] = Run.one ~n:1 (fun q -> appendo a b q) in *)
+          let answs = Run.one ~n:1 (fun q -> appendo a b q) in
+          assert_list_equal ~cmp:Domain.equal ~printer:Domain.show [c] answs
+        )
 
     ]
+
+(* let main =
+  let a = of_ilist [] in
+  let b = of_ilist [1; 2] in
+  let c = of_ilist [1; 2] in
+  (* let [answ] = Run.one ~n:1 (fun q -> appendo a b q) in *)
+  let answs = Run.one ~n:1 (fun q -> appendo a b q) in
+  assert_list_equal ~cmp:Domain.equal [c] answs *)

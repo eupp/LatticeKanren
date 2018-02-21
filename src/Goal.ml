@@ -2,7 +2,11 @@ type ('a, 'b) t = 'a -> ('b option * ('a, 'b) t) option
 
 (* monad+ *)
 
-let delay g _ = Some (None, g)
+(* let delay g _ = Some (None, g ()) *)
+
+let delay g x = Some (None, fun _ -> g () x)
+
+let delay3 g a b c x = Some (None, fun _ -> g a b c x)
 
 let empty = fun _ -> None
 
@@ -16,7 +20,7 @@ let rec interweave g g' a =
   | None          -> None
   | Some (b, tl)  ->
     match b with
-    | None    -> Some (None, interweave tl g')
+    | None    -> interweave tl g' a
     | Some b  ->
       match g' b with
       | None          -> None
@@ -31,8 +35,9 @@ let rec bind g f a =
   | None          -> None
   | Some (b, tl)  ->
     match b with
-    | None    -> Some (None, bind tl f)
-    | Some b  -> Some (None, interleave (f b) (bind tl f))
+    | None    -> bind tl f a
+    (* | Some b  -> Some (None, interleave (f b) (bind tl f)) *)
+    | Some b  -> interleave (f b) (bind tl f) a
 
 (* run *)
 
