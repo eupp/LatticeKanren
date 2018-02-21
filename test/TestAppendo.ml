@@ -56,23 +56,27 @@ let of_ilist is =
   of_list @@ List.map (fun i -> Func (string_of_int i, [])) is
 
 let (?&) ss = lift @@
-  ListLabels.fold_left ss ~init:top ~f:meet
+  ListLabels.fold_left ss ~init:top
+    ~f:(fun s s' ->
+      (* Printf.printf "\nmeeting %s and %s\n" (show s) (show s'); *)
+      meet s s'
+    )
 
-let rec appendo a b ab =
+let rec appendo a b ab = delay @@
   (?&
     [ (a === nil)
     ; (b === ab)
     ]
   )
   |||
-  (Fresh.three (fun h t ab' ->
+  (delay @@ Fresh.three (fun h t ab' ->
     (?&
       [ (a  === cons h t)
       ; (ab === cons h ab')
       ]
     )
     &&&
-      (appendo t b ab')
+      (delay @@ appendo t b ab')
   ))
 
 let rec reverso a b =
@@ -114,14 +118,21 @@ module Run =
         )
   end
 
+let assert_list_equal ?cmp xs ys =
+  let xl, yl = List.length xs, List.length ys in
+  let msg = Printf.sprintf "Lists have different length: expected %d, actual %d" xl yl in
+  assert_equal ~msg xl yl;
+  List.iter2 (fun x y -> assert_equal ?cmp x y) xs ys
+
 let tests =
   "appendo" >:::
     [ "1" >:: (fun test_ctx ->
-        let a = of_ilist [1; 2] in
-        let b = of_ilist [3; 4] in
-        let c = of_ilist [1; 2; 3; 4] in
-        let [answ] = Run.one (fun q -> appendo a b q) in
-        assert_equal c answ
+        let a = of_ilist [] in
+        let b = of_ilist [1; 2] in
+        let c = of_ilist [1; 2] in
+        (* let [answ] = Run.one ~n:1 (fun q -> appendo a b q) in *)
+        let answs = Run.one ~n:1 (fun q -> appendo a b q) in
+        assert_list_equal ~cmp:Domain.equal [c] answs
       )
 
     ]
