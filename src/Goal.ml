@@ -1,95 +1,50 @@
-(* type ('a, 'b) t = 'a -> ('b option * ('a, 'b) t) option *)
+module Make(T : Lattice.T) =
+  struct
+    type t = T.t -> (T.t * t) option
 
-(* type ('a, 'b) t =
-  | Co of ('a -> ('b * ('a, 'b) t) option)
-  | Thunk of (unit -> ('a, 'b) t) *)
+    let bot = fun _ -> None
+    let top = fun a -> Some (a, bot)
 
-type ('a, 'b) t =
-  'a -> ('a, 'b) stream
-and ('a, 'b) stream =
-  | Nil
-  | Cons of ('b * ('a, 'b) t)
-  | Thunk of ('a, 'b) t * 'a
+    let delay g =
+      fun a -> g () a
 
-(* monad+ *)
+    let is_bot g =
+      match g T.top with
+      | None   -> true
+      | Some _ -> false
 
-let empty = fun _ -> Nil
+    let is_top g =
+      match g T.top with
+      | None          -> false
+      | Some (a, tl)  -> (T.is_top a) && (is_bot tl)
 
-let rec force = function
-  | Thunk (zz, x) -> zz x
-  | s -> s
+    let lift a =
+      if T.is_bot a then bot else fun b ->
+        match T.meet a b with
+        | c when T.is_bot c -> None
+        | c                 -> Some (c, bot)
 
-(* let rec interleave g g' a =
-  match force (g a) with
-  | Nil          -> g' a
-  | Cons (b, tl) -> Cons (b, interleave g' tl) *)
+    let rec (<|>) g g' = fun a ->
+      match g a with
+      | None          -> g' a
+      | Some (b, tl)  -> Some (b, fun a' ->
+        match T.meet a a' with
+        | c when T.is_bot c -> None
+        | c                 -> (g' <|> tl) c
+      )
 
-let rec interleave g g' a =
-  match force (g a) with
-  | Nil          -> g' a
-  | Cons (b, tl) -> Cons (b, fun _ -> Thunk (interleave g' tl, a))
+    let rec (<&>) g g' = fun a ->
+      match g a with
+      | None          -> None
+      | Some (b, tl)  ->
+        match g' b with
+        | None          -> (g' <&> tl) a
+        | Some (c, tl') -> Some (c, (g' <&> tl) <|> tl')
 
-(* let rec interweave g g' a =
-  match force (g a) with
-  | Nil          -> Nil
-  | Cons (b, tl) ->
-    match force (g' b) with
-    | Nil           -> Nil
-    (* | Cons (c, tl') -> Cons (c, interleave (interweave g' tl) tl') *)
-    | Cons (c, tl') -> Cons (c, interweave tl' tl) *)
+    let rec run ?(n=(-1)) g =
+      if (n=0) then [] else
+        match g T.top with
+        | None         -> []
+        | Some (b, tl) -> let bs = run ~n:(n-1) tl in b::bs
 
-let rec interweave g g' a =
-  match force (g a) with
-  | Nil          -> Nil
-  | Cons (b, tl) ->
-    match force (g' b) with
-    | Nil           -> Nil
-    (* | Cons (c, tl') -> Cons (c, interleave (interweave g' tl) tl') *)
-    | Cons (c, tl') -> Cons (c, fun _ -> Thunk (interweave tl g', a))
-
-let rec map g f a =
-  match force (g a) with
-  | Nil          -> Nil
-  | Cons (b, tl) -> Cons (f b, map g f)
-
-let rec map_opt g f a =
-  match force (g a) with
-  | Nil          -> Nil
-  | Cons (b, tl) ->
-    match f b with
-    | Some c -> Cons (c, map_opt g f)
-    | None   -> Nil
-
-(* monad *)
-
-(* let return b = fun _ -> Cons (b, empty)
-
-let rec bind g f a =
-  match force (g a) with
-  | Nil          -> Nil
-  | Cons (b, tl) -> Thunk (interleave (f b) (bind tl f), a) *)
-
-(* run *)
-
-let rec run ?(n=(-1)) a g =
-  if (n=0) then [] else
-    match force (g a) with
-    | Nil          -> []
-    | Cons (b, tl) -> let bs = run ~n:(n-1) a tl in b::bs
-
-(*  *)
-
-(*  *)
-
-let lift_f f a = Cons (f a, empty)
-
-let lift_fopt f a =
-  match f a with
-  | None    -> Nil
-  | Some b  -> Cons (b, empty)
-
-(* delay *)
-
-let delay g x = Thunk (g (), x)
-
-let delay3 g a b c x = Thunk (g a b c, x)
+  end

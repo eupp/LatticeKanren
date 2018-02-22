@@ -1,32 +1,19 @@
-(* Goal is a suspended non-deterministic computation (possible infinite) *)
-type ('a, 'b) t
+module Make (T : Lattice.T) :
+  sig
+    type t
 
-(* monad on the first type parameter *)
+    (* val top : t
+    val bot : t
 
-(* val return : 'b -> ('a, 'b) t *)
+    val is_top : t -> bool
+    val is_bot : t -> bool *)
 
-(* val bind : ('a, 'b) t -> ('b -> ('a, 'c) t) -> ('a, 'c) t *)
+    val delay : (unit -> t) -> t
 
-val empty : ('a, 'b) t
+    val lift : T.t -> t
 
-val map : ('a, 'b) t -> ('b -> 'c) -> ('a, 'c) t
+    val (<&>) : t -> t -> t
+    val (<|>) : t -> t -> t
 
-val map_opt : ('a, 'b) t -> ('b -> 'c option) -> ('a, 'c) t
-
-(* interleaving of two goals *)
-val interleave : ('a, 'b) t -> ('a, 'b) t -> ('a, 'b) t
-
-(* interweaving of two goals *)
-val interweave : ('a, 'a) t -> ('a, 'a) t -> ('a, 'a) t
-
-(*  *)
-
-val run : ?n:int -> 'a -> ('a, 'b) t -> 'b list
-
-val delay : (unit -> ('a, 'b) t) -> ('a, 'b) t
-
-val delay3 : ('k -> 'l -> 'm -> ('a, 'b) t) -> 'k -> 'l -> 'm -> ('a, 'b) t
-
-val lift_f : ('a -> 'b) -> ('a, 'b) t
-
-val lift_fopt : ('a -> 'b option) -> ('a, 'b) t
+    val run : ?n:int -> t -> T.t list
+  end

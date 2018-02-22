@@ -28,11 +28,9 @@ module type Value =
 
 module type Solver =
   sig
-    type t
+    include Lattice.T
 
     module Domain : Value
-
-    (* include Lattice.T *)
 
     (* val extract : Domain.t -> t -> Domain.t MyStream.t *)
   end
