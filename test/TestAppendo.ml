@@ -51,7 +51,9 @@ let (?&) ss = lift @@
       meet s s'
     )
 
-let rec appendo a b ab = Goal.(
+let rec appendo a b ab =
+  (* Printf.printf "\nappendo (%s, %s, %s)\n" (Domain.show a) (Domain.show b) (Domain.show ab); *)
+Goal.(
   (?&
     [ (a === nil)
     ; (b === ab)
@@ -69,7 +71,9 @@ let rec appendo a b ab = Goal.(
   ))
 )
 
-let rec reverso a b = Goal.(
+let rec reverso a b =
+  (* Printf.printf "\nreverso (%s, %s)\n" (Domain.show a) (Domain.show b); *)
+Goal.(
   (?&
     [ (a === nil)
     ; (b === nil)
@@ -81,13 +85,12 @@ let rec reverso a b = Goal.(
       [ (a  === cons h t)
       ; (hs === single h)
       ]
-    )
-    <&>
+    ) <&> (
       (reverso t a')
     <&>
       (appendo a' hs b)
     )
-  )
+  ))
 )
 
 module Run =

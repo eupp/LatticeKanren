@@ -12,6 +12,9 @@ module Make (T : Lattice.T) :
 
     val lift : T.t -> t
 
+    val (&>>) : t -> t -> t
+    val (|>>) : t -> t -> t
+
     val (<&>) : t -> t -> t
     val (<|>) : t -> t -> t
 
