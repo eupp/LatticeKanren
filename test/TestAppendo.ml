@@ -69,25 +69,26 @@ let rec appendo a b ab = Goal.(
   ))
 )
 
-(* let rec reverso a b =
+let rec reverso a b = Goal.(
   (?&
     [ (a === nil)
     ; (b === nil)
     ]
   )
-  |||
-  (Fresh.four (fun h t hs a' ->
+  <|>
+  (delay @@ fun () -> Fresh.four (fun h t hs a' ->
     (?&
       [ (a  === cons h t)
       ; (hs === single h)
       ]
     )
-    &&&
+    <&>
       (reverso t a')
-    &&&
+    <&>
       (appendo a' hs b)
     )
-  ) *)
+  )
+)
 
 module Run =
   struct
@@ -101,7 +102,7 @@ module Run =
     let two ?n g =
       let q = Var (Var.fresh ()) in
       let r = Var (Var.fresh ()) in
-      ListLabels.fold_right (run ?n @@ g q) ~init:[]
+      ListLabels.fold_right (run ?n @@ g q r) ~init:[]
         ~f:(fun s acc ->
           match reify (tuple [q;r]) s with None -> acc | Some q -> q::acc
         )
@@ -121,7 +122,7 @@ let tests =
         let b = of_ilist [1; 2] in
         let c = of_ilist [1; 2] in
         let answs = Run.one (fun q -> appendo a b q) in
-        List.iter (fun x -> Printf.printf "\n%s\n" (Domain.show x)) answs;
+        (* List.iter (fun x -> Printf.printf "\n%s\n" (Domain.show x)) answs; *)
         assert_list_equal ~cmp:Domain.equal [c] answs
       );
 
@@ -129,9 +130,8 @@ let tests =
           let a = of_ilist [1;] in
           let b = of_ilist [2;] in
           let c = of_ilist [1; 2] in
-          (* let [answ] = Run.one ~n:1 (fun q -> appendo a b q) in *)
           let answs = Run.one (fun q -> appendo a b q) in
-          List.iter (fun x -> Printf.printf "\n%s\n" (Domain.show x)) answs;
+          (* List.iter (fun x -> Printf.printf "\n%s\n" (Domain.show x)) answs; *)
           assert_list_equal ~cmp:Domain.equal ~printer:Domain.show [c] answs
         );
 
@@ -139,9 +139,8 @@ let tests =
           let a = of_ilist [1;2] in
           let b = of_ilist [3;4] in
           let c = of_ilist [1; 2; 3; 4] in
-          (* let [answ] = Run.one ~n:1 (fun q -> appendo a b q) in *)
           let answs = Run.one (fun q -> appendo a b q) in
-          List.iter (fun x -> Printf.printf "\n%s\n" (Domain.show x)) answs;
+          (* List.iter (fun x -> Printf.printf "\n%s\n" (Domain.show x)) answs; *)
           assert_list_equal ~cmp:Domain.equal ~printer:Domain.show [c] answs
         );
 
@@ -149,18 +148,64 @@ let tests =
           let a = of_ilist [1;2] in
           let b = of_ilist [3;4] in
           let c = of_ilist [1; 2; 3; 4] in
-          (* let [answ] = Run.one ~n:1 (fun q -> appendo a b q) in *)
+          let answs = Run.one (fun q -> appendo q b c) in
+          (* List.iter (fun x -> Printf.printf "\n%s\n" (Domain.show x)) answs; *)
+          assert_list_equal ~cmp:Domain.equal ~printer:Domain.show [a] answs
+        );
+
+      "5" >:: (fun test_ctx ->
+          let a = of_ilist [1;2] in
+          let b = of_ilist [3;4] in
+          let c = of_ilist [1;2;3;4] in
           let answs = Run.one (fun q -> appendo a q c) in
-          List.iter (fun x -> Printf.printf "\n%s\n" (Domain.show x)) answs;
+          (* List.iter (fun x -> Printf.printf "\n%s\n" (Domain.show x)) answs; *)
           assert_list_equal ~cmp:Domain.equal ~printer:Domain.show [b] answs
+        );
+
+      "6" >:: (fun test_ctx ->
+          let c = of_ilist [1; 2; 3; 4] in
+          let expected =
+            [ tuple [(of_ilist []);  (of_ilist [1;2;3;4])]
+            ; tuple [(of_ilist [1]);   (of_ilist [2;3;4])]
+            ; tuple [(of_ilist [1;2]);   (of_ilist [3;4])]
+            ; tuple [(of_ilist [1;2;3]);   (of_ilist [4])]
+            ; tuple [(of_ilist [1;2;3;4]);  (of_ilist [])]
+            ]
+          in
+          let answs = Run.two (fun q r -> appendo q r c) in
+          (* List.iter (fun x -> Printf.printf "\n%s\n" (Domain.show x)) answs; *)
+          assert_list_equal ~cmp:Domain.equal ~printer:Domain.show expected answs
+        );
+
+      "7" >:: (fun test_ctx ->
+          let a = of_ilist [5; 4; 3; 2; 1] in
+          let b = of_ilist [1; 2; 3; 4; 5] in
+          let answs = Run.one (fun q -> reverso q b) in
+          (* List.iter (fun x -> Printf.printf "\n%s\n" (Domain.show x)) answs; *)
+          assert_list_equal ~cmp:Domain.equal ~printer:Domain.show [a] answs
+        );
+
+      "8" >:: (fun test_ctx ->
+          let a = of_ilist [5; 4; 3; 2; 1] in
+          let b = of_ilist [1; 2; 3; 4; 5] in
+          let answs = Run.one (fun q -> reverso a q) in
+          (* List.iter (fun x -> Printf.printf "\n%s\n" (Domain.show x)) answs; *)
+          assert_list_equal ~cmp:Domain.equal ~printer:Domain.show [b] answs
+        );
+
+      "9" >:: (fun test_ctx ->
+          let a = of_ilist [1; 2; 3] in
+          let b = of_ilist [3; 2; 1] in
+          let answs = Run.one (fun q -> (lift (a === q)) <&> (reverso a b)) in
+          (* List.iter (fun x -> Printf.printf "\n%s\n" (Domain.show x)) answs; *)
+          assert_list_equal ~cmp:Domain.equal ~printer:Domain.show [a] answs
+        );
+
+      "10" >:: (fun test_ctx ->
+          let a = of_ilist [1; 2; 1] in
+          let b = of_ilist [3; 2; 1] in
+          let answs = Run.one (fun q -> (lift (a === q)) <&> (reverso a b)) in
+          (* List.iter (fun x -> Printf.printf "\n%s\n" (Domain.show x)) answs; *)
+          assert_list_equal ~cmp:Domain.equal ~printer:Domain.show [] answs
         )
-
     ]
-
-(* let main =
-  let a = of_ilist [] in
-  let b = of_ilist [1; 2] in
-  let c = of_ilist [1; 2] in
-  (* let [answ] = Run.one ~n:1 (fun q -> appendo a b q) in *)
-  let answs = Run.one ~n:1 (fun q -> appendo a b q) in
-  assert_list_equal ~cmp:Domain.equal [c] answs *)
