@@ -86,9 +86,9 @@ Goal.(
       ; (hs === single h)
       ]
     ) <&> (
-      (reverso t a')
-    <&>
-      (appendo a' hs b)
+        (reverso t a')
+      <&>
+        (appendo a' hs b)
     )
   ))
 )
