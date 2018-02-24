@@ -45,11 +45,7 @@ let of_ilist is =
   of_list @@ List.map (fun i -> Func (string_of_int i, [])) is
 
 let (?&) ss = lift @@
-  ListLabels.fold_left ss ~init:top
-    ~f:(fun s s' ->
-      (* Printf.printf "\nmeeting %s and %s\n" (show s) (show s'); *)
-      meet s s'
-    )
+  ListLabels.fold_left ss ~init:top ~f:meet
 
 let rec appendo a b ab =
   (* Printf.printf "\nappendo (%s, %s, %s)\n" (Domain.show a) (Domain.show b) (Domain.show ab); *)

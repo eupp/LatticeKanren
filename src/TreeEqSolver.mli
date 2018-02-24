@@ -1,22 +1,16 @@
-(* module Make (T : Symbolic.EqSolver) :
-  sig *)
-    type tree =
-      | Var of Symbolic.Var.t
-      | Func of string * tree list
-      (* | Const of T.t *)
-      (* | Bot *)
 
-    module Domain : Symbolic.Value with type t = tree
+type tree =
+  | Var of Symbolic.Var.t
+  | Func of string * tree list
 
-    include Lattice.T
+module Domain : Symbolic.Value with type t = tree
 
-    val (===) : Domain.t -> Domain.t -> t
+include Lattice.T
 
-    val fresh : (Domain.t -> t) -> t
+val (===) : Domain.t -> Domain.t -> t
 
-    (* val extract : Domain.t -> t -> Domain.t MyStream.t *)
+val fresh : (Domain.t -> t) -> t
 
-    val reify : Domain.t -> t -> Domain.t option
+val reify : Domain.t -> t -> Domain.t option
 
-    val show : t -> string
-  (* end *)
+val show : t -> string

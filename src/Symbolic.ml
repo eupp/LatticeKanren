@@ -44,6 +44,5 @@ module type EqSolver =
   sig
     include Solver
 
-    (* val eq : Domain.t -> Domain.t -> t *)
     val (===) : Domain.t -> Domain.t -> t
   end
